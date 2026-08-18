@@ -57,9 +57,9 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: mf_user
-          POSTGRES_PASSWORD: mf_password
-          POSTGRES_DB: mf_platform_test
+          POSTGRES_USER: mf_trend_analysis_user
+          POSTGRES_PASSWORD: G0F5pmwQnvGxndu42hfu3i33AYQTJS2X
+          POSTGRES_DB: mf_trend_analysis
         ports:
           - 5432:5432
         options: >-
@@ -78,9 +78,9 @@ jobs:
           --health-retries 10
 
     env:
-      DATABASE_URL: postgresql+psycopg2://mf_user:mf_password@localhost:5432/mf_platform_test
+      DATABASE_URL: postgresql://mf_trend_analysis_user:G0F5pmwQnvGxndu42hfu3i33AYQTJS2X@dpg-da29da95efls73ep9k60-a/mf_trend_analysis
       TEST_DATABASE_URL: postgresql+psycopg2://mf_user:mf_password@localhost:5432/mf_platform_test
-      SECRET_KEY: ci-test-secret-key
+      SECRET_KEY: C4znLUCu6624HtJ1bedf3ZLkjJlL8g_tp6xt36r4TnW3OENo3ZAggtKsFmH8JybGzVh8U5WHWpHxFk2lhWx4Wg
       CELERY_BROKER_URL: redis://localhost:6379/0
       CELERY_RESULT_BACKEND: redis://localhost:6379/1
 
