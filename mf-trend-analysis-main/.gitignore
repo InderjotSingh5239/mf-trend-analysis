@@ -1,0 +1,47 @@
+# --- OS / editor ---
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# --- Backend (Python) ---
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.py[cod]
+backend/*.egg-info/
+backend/.venv/
+backend/venv/
+backend/env/
+backend/.env
+backend/*.log
+backend/logs/*
+!backend/logs/.gitkeep
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.coverage
+backend/htmlcov/
+backend/*.sqlite3
+backend/mlruns/
+backend/model_storage/
+backend/data/raw/
+backend/data/processed/
+
+# --- Frontend (Node) ---
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.env
+frontend/*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# --- Root-level general ---
+*.log
+node_modules/

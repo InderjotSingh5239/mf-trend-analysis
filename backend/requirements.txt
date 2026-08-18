@@ -1,0 +1,74 @@
+# =========================================================
+# MF Intelligence Platform — Core requirements
+#
+# This is everything the API needs to START and serve every
+# non-ML-training endpoint (funds, watchlist, portfolio, auth,
+# news, market data, predictions/inference against an
+# already-trained model). It intentionally excludes the heavy
+# ML/MLOps training stack (see requirements-ml.txt): those
+# imports are lazy-loaded (see app/ml/models/*.py, app/ml/registry.py)
+# so the app boots and every non-training endpoint works even
+# when requirements-ml.txt hasn't been installed.
+#
+# Install for a lightweight API-only deployment (inference against
+# a pre-trained model already lives in the DB) or local dev on the
+# non-ML parts of the app:
+#     pip install -r requirements.txt
+#
+# Install everything, including the ability to run model TRAINING
+# (POST /ml/train, the trainer, SHAP explainability, MLflow tracking):
+#     pip install -r requirements.txt -r requirements-ml.txt
+# =========================================================
+
+# --- Web framework ---
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+
+# --- Config & validation ---
+pydantic==2.9.2
+pydantic-settings==2.5.2
+email-validator==2.2.0
+
+# --- Database ---
+SQLAlchemy==2.0.35
+alembic==1.13.3
+psycopg2-binary==2.9.9
+asyncpg==0.29.0
+
+# --- Security / Auth ---
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+
+# --- Background jobs (ETL / ML scheduling) ---
+redis==5.0.8
+celery==5.4.0
+
+# --- Observability ---
+loguru==0.7.2
+
+# --- HTTP / networking ---
+httpx==0.27.2
+tenacity==9.0.0
+
+# --- Data & numerics (used by ETL, feature engineering, and the
+#     lighter scikit-learn models below — NOT the heavy training
+#     stack, so these stay in core) ---
+pandas==2.2.3
+numpy==1.26.4
+scipy==1.13.1
+python-dotenv==1.0.1
+scikit-learn==1.5.2
+
+# --- Market data + News Intelligence ---
+yfinance==0.2.44
+fredapi==0.5.2
+vaderSentiment==3.3.2
+
+# --- Testing (kept in core so CI/Docker test stages don't need a
+#     second install step for the non-ML test suite; heavier
+#     dev-only tooling lives in requirements-dev.txt) ---
+pytest==8.3.3
+pytest-asyncio==0.24.0
+pytest-cov==5.0.0

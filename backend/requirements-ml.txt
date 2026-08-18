@@ -1,0 +1,20 @@
+# =========================================================
+# MF Intelligence Platform — Heavy ML / MLOps training stack.
+#
+# Only needed on whatever runs model TRAINING (POST /ml/train and
+# the Celery/cron job that calls it) — not on every API replica.
+# The app's core imports of these are all lazy/guarded (see
+# app/ml/models/lightgbm_model.py, xgboost_model.py, prophet_model.py,
+# lstm_model.py, app/ml/registry.py, app/ml/explainability.py), so
+# the rest of the platform runs fine without this file installed.
+#
+#     pip install -r requirements.txt -r requirements-ml.txt
+# =========================================================
+
+xgboost==2.1.1
+lightgbm==4.5.0
+prophet==1.1.5
+tensorflow==2.17.0
+optuna==4.0.0
+shap==0.46.0
+mlflow==2.16.2

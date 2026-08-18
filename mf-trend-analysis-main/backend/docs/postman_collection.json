@@ -1,0 +1,277 @@
+{
+  "info": {
+    "name": "MF Intelligence Platform - Phase 1 (Core)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "refresh_token",
+      "value": ""
+    },
+    {
+      "key": "fund_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/health"
+          }
+        },
+        {
+          "name": "DB Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/health/db"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"trader@example.com\",\n  \"full_name\": \"Test Trader\",\n  \"password\": \"SuperSecret123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('access_token', data.access_token);",
+                  "pm.collectionVariables.set('refresh_token', data.refresh_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"trader@example.com\",\n  \"password\": \"SuperSecret123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/auth/refresh",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/users/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Funds",
+      "item": [
+        {
+          "name": "List Funds",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/funds?page=1&page_size=20"
+          }
+        },
+        {
+          "name": "Search Funds",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/funds?search=Bluechip"
+          }
+        },
+        {
+          "name": "Get Fund Detail",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/funds/{{fund_id}}"
+          }
+        },
+        {
+          "name": "Trigger AMFI Sync (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/funds/sync/amfi"
+          }
+        }
+      ]
+    },
+    {
+      "name": "ML",
+      "item": [
+        {
+          "name": "Train Fund Models (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/ml/train/{{fund_id}}"
+          }
+        },
+        {
+          "name": "Get Model Leaderboard",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/ml/leaderboard/{{fund_id}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Predictions",
+      "item": [
+        {
+          "name": "Generate Predictions (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/predictions/{{fund_id}}/generate"
+          }
+        },
+        {
+          "name": "Get Latest Predictions",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/predictions/{{fund_id}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Market Data",
+      "item": [
+        {
+          "name": "List Latest Market Data",
+          "request": { "method": "GET", "url": "{{base_url}}/api/v1/market-data" }
+        },
+        {
+          "name": "Get Market Series (NIFTY 50)",
+          "request": { "method": "GET", "url": "{{base_url}}/api/v1/market-data/%5ENSEI" }
+        },
+        {
+          "name": "Trigger Yahoo Finance Sync (admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": "{{base_url}}/api/v1/market-data/sync/yahoo"
+          }
+        },
+        {
+          "name": "Trigger FRED Sync (admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": "{{base_url}}/api/v1/market-data/sync/fred"
+          }
+        },
+        {
+          "name": "Get Fund Risk Profile (Beta/Alpha)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/market-data/funds/{{fund_id}}/risk-profile"
+          }
+        }
+      ]
+    },
+    {
+      "name": "News",
+      "item": [
+        {
+          "name": "List Recent News",
+          "request": { "method": "GET", "url": "{{base_url}}/api/v1/news?limit=20" }
+        },
+        {
+          "name": "List Negative Sentiment News",
+          "request": { "method": "GET", "url": "{{base_url}}/api/v1/news?sentiment=negative" }
+        },
+        {
+          "name": "Trigger News Sync (admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": "{{base_url}}/api/v1/news/sync"
+          }
+        }
+      ]
+    }
+  ]
+}
