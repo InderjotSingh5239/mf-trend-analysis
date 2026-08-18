@@ -20,8 +20,10 @@ jobs:
   lint:
     name: Lint (black, isort, flake8, mypy)
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -30,23 +32,23 @@ jobs:
           cache: "pip"
           cache-dependency-path: backend/requirements-dev.txt
 
-      - name: Install dependencies
+      - name: Install development dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
-      - name: Run black (check only)
+      - name: Run Black
         run: black --check app tests
 
-      - name: Run isort (check only)
+      - name: Run isort
         run: isort --check-only app tests
 
-      - name: Run flake8
+      - name: Run Flake8
         run: flake8 app tests
 
       - name: Run mypy
         run: mypy app --ignore-missing-imports
-        continue-on-error: true # non-blocking during early development; tighten once stable
+        continue-on-error: true
 
   test:
     name: Unit + Integration Tests
@@ -67,6 +69,7 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+
       redis:
         image: redis:7-alpine
         ports:
@@ -79,13 +82,21 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://mf_trend_analysis_user:G0F5pmwQnvGxndu42hfu3i33AYQTJS2X@dpg-da29da95efls73ep9k60-a/mf_trend_analysis
-      TEST_DATABASE_URL: postgresql+psycopg2://mf_user:mf_password@localhost:5432/mf_platform_test
+      TEST_DATABASE_URL: postgresql://mf_trend_analysis_user:G0F5pmwQnvGxndu42hfu3i33AYQTJS2X@dpg-da29da95efls73ep9k60-a/mf_trend_analysis
+
       SECRET_KEY: C4znLUCu6624HtJ1bedf3ZLkjJlL8g_tp6xt36r4TnW3OENo3ZAggtKsFmH8JybGzVh8U5WHWpHxFk2lhWx4Wg
+      APP_ENV: test
+      DEBUG: "false"
+      API_V1_PREFIX: /api/v1
+
       CELERY_BROKER_URL: redis://localhost:6379/0
       CELERY_RESULT_BACKEND: redis://localhost:6379/1
 
+      BACKEND_CORS_ORIGINS: '["https://mf-trend-analysis.vercel.app"]'
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -103,7 +114,12 @@ jobs:
         run: alembic upgrade head
 
       - name: Run test suite with coverage
-        run: pytest --cov=app --cov-report=term-missing --cov-report=xml -v
+        run: |
+          pytest \
+            --cov=app \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            -v
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
@@ -115,25 +131,80 @@ jobs:
     name: Docker Build & Smoke Test
     runs-on: ubuntu-latest
     needs: test
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Build Docker image
-        working-directory: backend
-        run: docker build -t mf-intelligence-platform-backend:${{ github.sha }} .
-
-      - name: Verify image runs and responds to health check
         run: |
-          docker network create mf-ci-net
-          docker run -d --network mf-ci-net --name test-db \
-            -e POSTGRES_USER=mf_user -e POSTGRES_PASSWORD=mf_password -e POSTGRES_DB=mf_platform \
+          docker build \
+            -t mf-intelligence-platform-backend:${{ github.sha }} \
+            ./backend
+
+      - name: Create Docker network
+        run: docker network create mf-ci-net
+
+      - name: Start PostgreSQL
+        run: |
+          docker run -d \
+            --network mf-ci-net \
+            --name test-db \
+            -e POSTGRES_USER=mf_user \
+            -e POSTGRES_PASSWORD=mf_password \
+            -e POSTGRES_DB=mf_platform \
             postgres:16-alpine
-          sleep 8
-          docker run -d --network mf-ci-net --name test-api \
+
+      - name: Wait for PostgreSQL
+        run: |
+          for i in {1..30}; do
+            if docker exec test-db pg_isready \
+              -U mf_user \
+              -d mf_platform; then
+              echo "PostgreSQL is ready"
+              exit 0
+            fi
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+
+          echo "PostgreSQL failed to become ready"
+          docker logs test-db
+          exit 1
+
+      - name: Start backend container
+        run: |
+          docker run -d \
+            --network mf-ci-net \
+            --name test-api \
             -e DATABASE_URL=postgresql+psycopg2://mf_user:mf_password@test-db:5432/mf_platform \
-            -e APP_ENV=development \
+            -e APP_ENV=test \
+            -e DEBUG=false \
             -e SECRET_KEY=ci-smoke-secret \
+            -e API_V1_PREFIX=/api/v1 \
+            -e BACKEND_CORS_ORIGINS='["http://localhost:5173"]' \
             -p 8000:8000 \
             mf-intelligence-platform-backend:${{ github.sha }}
-          sleep 8
-          docker exec test-api curl -f http://localhost:8000/api/v1/health || (docker logs test-api && exit 1)
+
+      - name: Wait for backend
+        run: |
+          for i in {1..30}; do
+            if docker exec test-api \
+              python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"; then
+              echo "Backend is healthy"
+              exit 0
+            fi
+
+            echo "Waiting for backend..."
+            sleep 2
+          done
+
+          echo "Backend failed health check"
+          docker logs test-api
+          exit 1
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker rm -f test-api test-db || true
+          docker network rm mf-ci-net || true
