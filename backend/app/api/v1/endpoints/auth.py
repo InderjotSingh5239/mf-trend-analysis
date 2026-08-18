@@ -9,9 +9,24 @@ from app.database.session import get_db
 from app.schemas.auth import AccessTokenResponse, LoginRequest, RefreshRequest, TokenResponse
 from app.schemas.user import UserCreate, UserRead
 from app.services.auth_service import AuthError, AuthService
+from fastapi.security import OAuth2PasswordRequestForm
 
 router = APIRouter()
 
+@router.post("/token", response_model=TokenResponse, tags=["Auth"])
+def token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),) -> TokenResponse:
+    service = AuthService(db)
+
+    try:
+        return service.login(form_data.username, form_data.password)
+    except AuthError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(exc),
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
 
 @router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED, tags=["Auth"])
 def register(payload: UserCreate, db: Session = Depends(get_db)) -> UserRead:
