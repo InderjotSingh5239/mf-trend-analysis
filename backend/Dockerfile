@@ -27,9 +27,7 @@ COPY . /code
 
 EXPOSE 8000
 
-ENV PORT=8000
-
 # Shell form so $PORT is expanded at container start — Render (and similar
 # PaaS providers) inject PORT dynamically; docker-compose overrides CMD
 # anyway (it runs migrations first), so this only matters for `docker run`.
-CMD alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT}
+CMD alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
